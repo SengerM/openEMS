@@ -1,14 +1,11 @@
 # openEMS python interface
 
 ## Install
-* Simple version:
-```python
-python setup.py install
+1. Set the environment variable `OPENEMS_INSTALL_PATH` to point to the installation of openEMS, for example in Linux:
+```bash
+export OPENEMS_INSTALL_PATH="/this/is/where/I/installed/openEMS"
 ```
-
-* Extended options, e.g. for custom install path at */opt/openEMS*:
-```python
-python setup.py build_ext -I/opt/openEMS/include -L/opt/openEMS/lib -R/opt/openEMS/lib"
-python setup.py install
+2. Run
+```bash
+pip install /path/to/the/folder/where/this/README.md/is
 ```
-**Note:** The install command may require root on Linux, or add --user to install to ~/.local
