@@ -30,6 +30,7 @@ dependencies = [
 	'numpy',
 	'h5py',
 	'CSXCAD',
+	'typing_extensions', # Used for `typing_extensions.deprecated` warning, will not be needed as of Python 3.13 because it will become part of the standard `warnings` library.
 ]
 
 [project.urls]

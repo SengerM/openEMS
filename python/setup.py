@@ -44,7 +44,7 @@ sys.path.append(str(PATH_TO_CSXCAD_PYTHON_PACKAGE))
 
 extensions = [
     Extension(
-        '*', 
+        '*',
         ['openEMS/*.pyx',],
         include_dirs = [str(path_to_openEMS_installation/'include')],
         library_dirs = [str(path_to_openEMS_installation/'lib')],
@@ -58,4 +58,3 @@ setup(
     packages = ['openEMS'],
     ext_modules = cythonize(extensions),
 )
-
