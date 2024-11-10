@@ -520,48 +520,61 @@ cdef class openEMS:
                     continue
                 grid.AddLine(n, hint[n])
 
-    def Run(self, sim_path:str|Path, cleanup:bool=False, setup_only:bool=False, debug_material:bool=False, debug_pec:bool=False, debug_operator:bool=False, debug_boxes:bool=False, debug_csx:bool=False, verbose:int=0, numThreads:int=0):
+    def _SetLibraryArguments(self, arguments):
+        allOptions = []
+
+        for key, val in arguments.items():
+            key = key.replace("_", "-")
+            key = key.replace("setup-only", "no-simulation")
+
+            # boolean options are implicit
+            if val and (val is not True) and (val is not False):
+                opt = "%s=%s" % (key, val)
+            else:
+                opt = "%s" % key
+
+            allOptions.append(opt.encode("UTF-8"))
+
+        cdef vector[string] allOptionsBuffer = allOptions
+        self.thisptr.SetLibraryArguments(allOptionsBuffer)
+
+    def Run(self, sim_path, cleanup=False, setup_only=False, **kw):
         """Run the openEMS FDTD simulation.
 
-        :param sim_path: Path to run in and create result data.
-        :param cleanup: Remove existing sim_path to cleanup old results.
-        :param setup_only: Only perform FDTD setup, do not run simulation.
-        :param verbose: Set the openEMS verbosity level, form 0 to 3.
-        :param numThreads: Set the number of threads.
+        :param sim_path: str -- path to run in and create result data
+        :param cleanup: bool -- remove existing sim_path to cleanup old results
+        :param setup_only: bool -- only perform FDTD setup, do not run simulation
+
+        One can also pass almost all command-line options supported by the main
+        openEMS executable via keyword parameters (replace dashes with
+        underscores). Supported options may vary from versions to versions,
+        see `./openEMS --help`). Examples are:
+
+        * verbose (int) -- set the openEMS verbosity level 0..3
+        * numThreads (int) -- set the number of threads (default 0 --> max)
+        * disable_dumps (bool) -- disable all field dumps for faster simulation
+        * debug_material (bool) - dump material distribution to a vtk file for
+          debugging.
+        * debug_PEC (bool) - dump metal distribution to a vtk file for debugging
+        * debug_operator (bool) - dump operator to vtk file for debugging
+        * debug_boxes (bool) - Dump e.g. probe boxes to vtk file for debugging
+        * debug_CSX (bool) - Write CSX geometry file to debugCSX.xml
+        * dump_statistics (bool) - dump simulation statistics to
+          `openEMS_run_stats.txt` and `openEMS_stats.txt`
+        * showProbeDiscretization (bool) - show probe discretization information
+          for debugging
+        * nativeFieldDumps (bool) - dump all fields using the native field
+          components
         """
         sim_path = Path(sim_path) # Check that whatever we receive can be interpreted as a path.
-        if verbose not in {0,1,2,3}:
-            raise ValueError(f'`verbose` must be 0, 1, 2 or 3, received {repr(verbose)}. ')
-        if not isinstance(numThreads, int) or numThreads<0:
-            raise ValueError(f'`numThreads` must be an int >= 0, received {repr(numThreads)}')
-        for name,val in dict(cleanup=cleanup, setup_only=setup_only, debug_material=debug_material, debug_pec=debug_pec, debug_operator=debug_operator, debug_boxes=debug_boxes, debug_csx=debug_csx).items():
-            if val not in {True,False}: # Not sure why, but Cython complains with `isinstance(val, bool)`.
-                raise TypeError(f'`{name}` must be a bool, received object of type {type(val)}. ')
 
         if cleanup and sim_path.is_dir():
             shutil.rmtree(str(sim_path), ignore_errors=True)
         sim_path.mkdir(parents=True, exist_ok=False)
         os.chdir(sim_path)
 
-        if verbose is not None:
-            self.thisptr.SetVerboseLevel(verbose)
-        if debug_material:
-            with nogil:
-                self.thisptr.DebugMaterial()
-        if debug_pec:
-            with nogil:
-                self.thisptr.DebugPEC()
-        if debug_operator:
-            with nogil:
-                self.thisptr.DebugOperator()
-        if debug_boxes:
-            with nogil:
-                self.thisptr.DebugBox()
-        if debug_csx:
-            with nogil:
-                self.thisptr.DebugCSX()
-        if numThreads is not None:
-            self.thisptr.SetNumberOfThreads(int(numThreads))
+        self._SetLibraryArguments(kw)
+
         assert os.getcwd() == os.path.realpath(sim_path)
         _openEMS.WelcomeScreen()
         cdef int error_code
