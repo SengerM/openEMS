@@ -24,7 +24,6 @@ from openEMS import ports, nf2ff, automesh
 import warnings
 from typing_extensions import deprecated # The `deprecated` decorator will be available in the `warnings` standard library as of Python 3.13, see [here](https://docs.python.org/3.13/library/warnings.html#warnings.deprecated).
 
-
 from CSXCAD.Utilities import GetMultiDirs
 
 cdef class openEMS:
@@ -575,7 +574,9 @@ cdef class openEMS:
 
         self._SetLibraryArguments(kw)
 
-        assert os.getcwd() == os.path.realpath(sim_path)
+        if Path(os.getcwd()).resolve() == Path(sim_path).resolve():
+            raise RuntimeError('Current working directory is different from `sim_path`. If you encounter this error, please report it to the developers, because it should never happen in normal conditions, it is not your fault. ')
+
         _openEMS.WelcomeScreen()
         cdef int error_code
         with nogil:
